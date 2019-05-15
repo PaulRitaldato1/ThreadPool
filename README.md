@@ -29,3 +29,4 @@ int main () {
   //general push format
   // pool.push<argtype,argtype,argtype,argtype>(function, arg1, arg2, arg3, arg4);
   }
+```
