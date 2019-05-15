@@ -18,7 +18,7 @@ void jobWithArgs(int arg){
 int main () {
   
   //the pool will only allow you to make any number of threads as long as its less than your max thread count
-  ThreadPool& pool = ThreadPool::getInstance(5); //This creates an instance of the threadpool with 5 thread (if one hasnt been created)
+  ThreadPool& pool = ThreadPool::getInstance(5); //creates an instance of the threadpool with 5 threads (if one hasnt been created)
   
   pool.push(job); //this is how you pass it a job. Easy as that!
   
