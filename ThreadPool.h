@@ -13,7 +13,7 @@
 	T(const T& other) {(void)other;} \
 	void operator=(const T& other) { (void)other; }
 
-#define DBG
+//#define DBG
 #ifdef DBG
 #define DEBUG(x) std::cout << x << std::endl;
 #else
@@ -138,13 +138,13 @@ void ThreadPool::threadManager(){
         std::function<void()> job;
         {
             std::unique_lock<std::mutex> lock(JobMutex);
-            thread.wait(lock);
+            thread.wait(lock, [this]{return !JobQueue.empty();});
             if(JobQueue.size() < 1)
                 continue;
-            //DEBUG(JobQueue.empty());
+
             job = JobQueue.front();
             JobQueue.pop();
-            //DEBUG(JobQueue.empty());
+
 
         }
         job();
@@ -176,8 +176,10 @@ void ThreadPool::push_back(std::function<void(arg)> job, arg arg1){
 template <typename argu1, typename argu2>
 void ThreadPool::push_back(std::function<void(argu1, argu2)> job, argu1 arg1, argu2 arg2){
     auto tmpJob = std::bind(job, arg1, arg2);
-    std::unique_lock<std::mutex> lock(JobMutex);
-    JobQueue.push(tmpJob);
+    {
+        std::unique_lock<std::mutex> lock(JobMutex);
+        JobQueue.push(tmpJob);
+    }
     thread.notify_one();
 }
 
@@ -185,8 +187,10 @@ void ThreadPool::push_back(std::function<void(argu1, argu2)> job, argu1 arg1, ar
 template <typename a1, typename a2, typename a3>
 void ThreadPool::push_back(std::function<void(a1, a2, a3)> job, a1 arg1, a2 arg2, a3 arg3){
     auto tmpJob = std::bind(job, arg1, arg2, arg3);
-    std::unique_lock<std::mutex> lock(JobMutex);
-    JobQueue.push(tmpJob);
+    {
+        std::unique_lock<std::mutex> lock(JobMutex);
+        JobQueue.push(tmpJob);
+    }
     thread.notify_one();
 }
 
@@ -194,7 +198,9 @@ void ThreadPool::push_back(std::function<void(a1, a2, a3)> job, a1 arg1, a2 arg2
 template <typename ar1, typename ar2, typename ar3, typename ar4>
 void ThreadPool::push_back(std::function<void(ar1, ar2, ar3, ar4)> job, ar1 arg1, ar2 arg2, ar3 arg3, ar4 arg4){
     auto tmpJob = std::bind(job, arg1, arg2, arg3, arg4);
-    std::unique_lock<std::mutex> lock(JobMutex);
-    JobQueue.push(tmpJob);
+    {
+        std::unique_lock<std::mutex> lock(JobMutex);
+        JobQueue.push(tmpJob);
+    }
     thread.notify_one();
 }

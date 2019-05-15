@@ -43,7 +43,7 @@ void test2(){
 }
 
  void test3(){
-     //pool.push_back(dummyNoArg);
+     pool.push_back(dummyNoArg);
      pool.push_back<int>(dummy1Arg, 1);
      pool.push_back<int, int>(dummy2Arg, 2, 2);
      pool.push_back<int,int,int>(dummy3Arg, 3, 3, 3);
