@@ -5,7 +5,7 @@ I needed an easy to use thread pool for C++ for my game engine project, so here 
 The ThreadPool class is a Singleton. So here is an example of how to use it.
 
 
-```
+```c++
 #include "ThreadPool.h"
 
 void job(){
