@@ -112,7 +112,7 @@ private:
     void threadManager();
 
     /*  Constructors */
-
+    ThreadPool(); //prevent default constructor from being called
     /* Temporarily Removed until I can figure out how to have a singleton with multiple constructors*/
 
     // inline ThreadPool(){
