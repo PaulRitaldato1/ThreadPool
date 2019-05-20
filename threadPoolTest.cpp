@@ -76,6 +76,8 @@ int main(){
     test2();
 
     test1();
+    
+    //must wait. Sometimes the main program will end before the threads finish executing their job. The thrteads then get killed early
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     test4();
