@@ -24,9 +24,8 @@ int main () {
   
   //Return types are accepted but NOT checked. There is no way to get a return value from these jobs
   //to give a job with arguments (up to 4 arguments are supported) simply call "push" as follows
-  pool.push<int>(jobWithArgs, 5); //the "push" function is templated and overloaded so just specify the argument types with push
+  //the "push" function is using a variadic template, so just call push with the function as the first param and the args as the rest
+  pool.push(jobWithArgs, 5);
   
-  //general push format
-  // pool.push<argtype,argtype,argtype,argtype>(function, arg1, arg2, arg3, arg4);
   }
 ```
