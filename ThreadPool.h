@@ -64,27 +64,16 @@ public:
         return instance;
     }
 
-
-    /* overloaded push_back methods */ 
-
-    //add no arg function to queue
-    void push(std::function<void()> job);
-
-    // //add 1 arg function to queue
-     template <typename arg>
-     void push(std::function<void(arg)> job, arg arg1);
-
-    //add 2 arg function to queue
-    template <typename argu1, typename argu2>
-    void push(std::function<void(argu1, argu2)>job, argu1 arg1, argu2 arg2);
-
-    //add 3 arg function to queue
-    template <typename a1, typename a2, typename a3>
-    void push(std::function<void(a1, a2, a3)> job, a1 arg1, a2 arg2, a3 arg3);
-
-    //add 4 arg function to queue
-    template <typename ar1, typename ar2, typename ar3, typename ar4>
-    void push(std::function<void(ar1, ar2, ar3, ar4)> job, ar1 arg1, ar2 arg2, ar3 arg3, ar4 arg4);
+    //add any arg # function to queue
+    template <typename Func, typename... Args >
+    inline void push(Func f, Args... args){
+        auto funcToAdd = std::bind(f, args...);
+        {
+            std::unique_lock<std::mutex> lock(JobMutex);
+            JobQueue.push(funcToAdd);
+        }
+        thread.notify_one();
+    }
 
     /* map function (similar to pythons map function) */
     template <typename argument>
@@ -105,6 +94,10 @@ public:
         numThreads = (uint8_t)newTCount;
         Pool.resize(newTCount);
         DEBUG("New size is: " + std::to_string(Pool.size()));
+    }
+
+    inline uint8_t getThreadCount(){
+        return numThreads;
     }
 
 private:
@@ -172,58 +165,4 @@ void ThreadPool::threadManager(){
         }
         job();
     }
-}
-
-void ThreadPool::push(std::function<void()> job){
-    {
-        std::unique_lock<std::mutex> lock(JobMutex);
-        JobQueue.push(job);
-    }
-    thread.notify_one();
-}
-
-
- //add 1 arg function to queue
-template <typename arg>
-void ThreadPool::push(std::function<void(arg)> job, arg arg1){
-	auto tmpJob = std::bind(job, arg1);
-//     DEBUG("made it here");
-    {
-        std::unique_lock<std::mutex> lock(JobMutex);
-        JobQueue.push(tmpJob);
-    }
-    thread.notify_one();
-}
-
-//add 2 arg function to queue
-template <typename argu1, typename argu2>
-void ThreadPool::push(std::function<void(argu1, argu2)> job, argu1 arg1, argu2 arg2){
-    auto tmpJob = std::bind(job, arg1, arg2);
-    {
-        std::unique_lock<std::mutex> lock(JobMutex);
-        JobQueue.push(tmpJob);
-    }
-    thread.notify_one();
-}
-
-//add 3 arg function to queue
-template <typename a1, typename a2, typename a3>
-void ThreadPool::push(std::function<void(a1, a2, a3)> job, a1 arg1, a2 arg2, a3 arg3){
-    auto tmpJob = std::bind(job, arg1, arg2, arg3);
-    {
-        std::unique_lock<std::mutex> lock(JobMutex);
-        JobQueue.push(tmpJob);
-    }
-    thread.notify_one();
-}
-
-//add 4 arg function to queue
-template <typename ar1, typename ar2, typename ar3, typename ar4>
-void ThreadPool::push(std::function<void(ar1, ar2, ar3, ar4)> job, ar1 arg1, ar2 arg2, ar3 arg3, ar4 arg4){
-    auto tmpJob = std::bind(job, arg1, arg2, arg3, arg4);
-    {
-        std::unique_lock<std::mutex> lock(JobMutex);
-        JobQueue.push(tmpJob);
-    }
-    thread.notify_one();
 }
