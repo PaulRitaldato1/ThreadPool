@@ -113,20 +113,6 @@ private:
 
     /*  Constructors */
     ThreadPool(); //prevent default constructor from being called
-    /* Temporarily Removed until I can figure out how to have a singleton with multiple constructors*/
-
-    // inline ThreadPool(){
-    //    numThreads = (uint8_t)std::thread::hardware_concurrency() - 1;
-    //    if(numThreads < 0 )
-    //         numThreads = 1;
-    //     for (int i = 0; i != numThreads; ++i){
-
-    //         Pool.push_back(std::thread(&ThreadPool::threadManager, this));
-    //         Pool.back().detach();
-    //         DEBUG("Thread " + std::to_string(i) + " allocated");
-    //     }
-    //     DEBUG("Number of threads being allocated " + std::to_string(numThreads));
-    // }
 
     inline ThreadPool(uint8_t numThreads) : numThreads(numThreads) {
         int tmp = std::thread::hardware_concurrency() - 1;
