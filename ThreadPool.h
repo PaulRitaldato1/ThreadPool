@@ -87,7 +87,7 @@ public:
     inline void resize(int newTCount){
         
         int tmp = std::thread::hardware_concurrency() - 1;
-        if(newTCount > tmp){
+        if(newTCount > tmp || netTCount < 1){
             throw bad_thread_alloc("Cannot allocate " + std::to_string(numThreads) + " because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
         }
         
