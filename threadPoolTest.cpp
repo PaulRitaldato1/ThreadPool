@@ -69,6 +69,17 @@ void dummy4Arg(int i, int j, int k, int l){
     }
     std::cout << "Test 4 Pass" << std::endl;
  }
+
+ void test5(){
+
+     try{
+        pool.resize(45);
+     }
+     catch(bad_thread_alloc& e){
+         std::cout << e.what() << std::endl;
+     }
+
+ }
 int main(){
 
     test1();
@@ -81,5 +92,7 @@ int main(){
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     test4();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+    test5();
 }

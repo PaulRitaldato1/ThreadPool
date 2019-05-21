@@ -27,17 +27,19 @@ private:
      std::string info;
      std::string file;
     int line;
-   //const char* what() const throw() {
-   //     std::string what = "bad_thread_alloc: In file " + file + ": " + info + " on line " + std::to_string(line);
-   //     return what.c_str();
-   // }
+
 
 public:
-    bad_thread_alloc(const std::string info, const char* file, int line) 
+   const char* what() const throw() {
+        std::string what = "bad_thread_alloc: " + info + " on line " + std::to_string(line) + " in file " + file;
+        return what.c_str();
+    }
+
+    bad_thread_alloc(const std::string info, const char* file, int line)
     {
         std::string tmp(file);
-        this->file;
-        this->info = tmp;
+        this->file = tmp;
+        this->info = info;
         this->line = line;
     }
 }; 
@@ -50,14 +52,7 @@ tons of threads, I made it a singleton */
 class ThreadPool{
 public:
 
-    /* Temporarily Removed until I can figure out how to have a singleton with multiple constructors*/
-    //getting the instance of the class, or creating one if it does not alread exist
-    // static ThreadPool& getInstance(){
-    //     static ThreadPool instance;
-    //     return instance;
-    // }
-
-    //overloaded getInstance to allow the second constructor to be called
+    //getInstance to allow the second constructor to be called
     static ThreadPool& getInstance(int numThreads){
         static ThreadPool instance(numThreads);
 
@@ -87,8 +82,8 @@ public:
     inline void resize(int newTCount){
         
         int tmp = std::thread::hardware_concurrency() - 1;
-        if(newTCount > tmp || netTCount < 1){
-            throw bad_thread_alloc("Cannot allocate " + std::to_string(numThreads) + " because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
+        if(newTCount > tmp || newTCount < 1){
+            throw bad_thread_alloc("Cannot allocate " + std::to_string(newTCount) + " threads because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
         }
         
         numThreads = (uint8_t)newTCount;
@@ -117,7 +112,7 @@ private:
     inline ThreadPool(uint8_t numThreads) : numThreads(numThreads) {
         int tmp = std::thread::hardware_concurrency() - 1;
         if(numThreads > tmp){
-            throw bad_thread_alloc("Cannot allocate " + std::to_string(numThreads) + " because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
+            throw bad_thread_alloc("Cannot allocate " + std::to_string(numThreads) + " threads because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
         }
         for(int i = 0; i != numThreads; ++i){
             Pool.push_back(std::thread(&ThreadPool::threadManager, this));
