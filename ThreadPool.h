@@ -9,12 +9,32 @@
 #include<condition_variable>
 #include<functional>
 #include<iostream>
+#include<map>
+#include<memory>
+#include<type_traits>
+#include<future>
+#include<utility>
+
+
+class task {
+public:
+	virtual ~task() {}
+	int func;
+};
+template <typename T>
+class AnyTask : virtual public task {
+public:
+	AnyTask(T func) : func(std::move(func)) {}
+	T func;
+};
+
 
 //portable way to null the copy and assignment operators
 #define NULL_COPY_AND_ASSIGN(T) \
 	T(const T& other) {(void)other;} \
 	void operator=(const T& other) { (void)other; }
 
+#define MAX_THREADS std::thread::hardware_concurrency() - 1;
 //#define DBG
 #ifdef DBG
 #define DEBUG(x) std::cout << x << std::endl;
@@ -37,14 +57,15 @@ public:
         return what.c_str();
     }
 
-    bad_thread_alloc(const std::string info, const char* file, int line)
+    bad_thread_alloc(const std::string info, char* file, int line)
     {
-        std::string tmp(file);
-        this->file = tmp;
+        //std::string tmp(file);
+        //this->file = tmp;
         this->info = info;
         this->line = line;
     }
 }; 
+
 
 
 /* ThreadPool class
@@ -63,13 +84,17 @@ public:
 
     //add any arg # function to queue
     template <typename Func, typename... Args >
-    inline void push(Func f, Args... args){
+    inline uint64_t push(Func& f, Args&&... args){
         auto funcToAdd = std::bind(f, args...);
-        {
-            std::unique_lock<std::mutex> lock(JobMutex);
-            JobQueue.push(funcToAdd);
-        }
+		
+
+        
+		uint64_t newID = currentID++;
+		std::unique_lock<std::mutex> lock(JobMutex);
+		//typename std::invoke_result<Func, Args...>::type tempType;
+        JobQueue.push(std::make_pair(funcToAdd, newID));
         thread.notify_one();
+		return newID; //return the ID of the job in the queue
     }
 
     /* map function (similar to pythons map function) */
@@ -83,7 +108,7 @@ public:
     /* utility functions will go here*/
     inline void resize(int newTCount){
         
-        int tmp = std::thread::hardware_concurrency() - 1;
+        int tmp = MAX_THREADS;
         if(newTCount > tmp || newTCount < 1){
             throw bad_thread_alloc("Cannot allocate " + std::to_string(newTCount) + " threads because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
         }
@@ -96,12 +121,22 @@ public:
     inline uint8_t getThreadCount(){
         return numThreads;
     }
+	
+	auto getReturnValue(uint64_t jobID) {
+		//Not sure how to handle this
+	}
 
 private:
-    
+
+	class future {};
+	template <class T>
+	class futureOf : public future {};
+	std::map<uint64_t, std::shared_ptr<future>> returnMap;
+
+	uint64_t currentID;
     uint8_t numThreads;
-    std::vector<std::thread> Pool;
-    std::queue<std::function<void()>> JobQueue;
+    std::vector<std::thread> Pool; //the actual thread pool
+    std::queue<std::pair<std::function<void()>, uint64_t>> JobQueue; //the jobs with their assigned ID
     std::condition_variable thread;
     std::mutex JobMutex;
 
@@ -111,8 +146,10 @@ private:
     /*  Constructors */
     ThreadPool(); //prevent default constructor from being called
 
+	//real constructor that is used
     inline ThreadPool(uint8_t numThreads) : numThreads(numThreads) {
-        int tmp = std::thread::hardware_concurrency() - 1;
+		currentID = 0; //initialize currentID
+        int tmp = MAX_THREADS;
         if(numThreads > tmp){
             throw bad_thread_alloc("Cannot allocate " + std::to_string(numThreads) + " threads because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
         }
@@ -131,21 +168,17 @@ NULL_COPY_AND_ASSIGN(ThreadPool);
 
 
 void ThreadPool::threadManager(){
-    while(true){
-        std::function<void()> job;
-        {
-            std::unique_lock<std::mutex> lock(JobMutex);
-            thread.wait(lock, [this]{return !JobQueue.empty();});
+	while (true) {
 
-            //strange bug where it will continue even if the job queue is empty
-            if(JobQueue.size() < 1)
-                continue;
+		std::unique_lock<std::mutex> lock(JobMutex);
+		thread.wait(lock, [this] {return !JobQueue.empty(); });
 
-            job = JobQueue.front();
-            JobQueue.pop();
+		//strange bug where it will continue even if the job queue is empty
+		if (JobQueue.size() < 1)
+			continue;
 
-
-        }
-        job();
+		auto job = JobQueue.front().first;
+		JobQueue.pop();
+		job();
     }
 }

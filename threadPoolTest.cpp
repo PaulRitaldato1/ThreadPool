@@ -1,8 +1,7 @@
 #include "ThreadPool.h"
 #include <chrono>
 #include <string>
-ThreadPool& pool = ThreadPool::getInstance(15);
-
+ThreadPool& pool = ThreadPool::getInstance(7);
 static int counts[5] = {0};
 /* dummy jobs to pass to the pool*/
 void dummyNoArg(){
@@ -40,7 +39,14 @@ void dummy4Arg(int i, int j, int k, int l){
 
 }
 
+int dummyRtn() {
+	std::cout << "in rtn" << std::endl;
+	return 1;
+}
+void blah(int& i) {
 
+	i += 10;
+}
 /* tests*/
  void test1(){
      pool.push(dummyNoArg);
@@ -49,6 +55,14 @@ void dummy4Arg(int i, int j, int k, int l){
      pool.push(dummy3Arg, 3, 3, 3);
      pool.push(dummy4Arg, 4, 4, 4, 4);
 
+	 pool.push(dummyRtn);
+
+	 int i = 5;
+	 auto f = [](int &i) {i += 10; };
+	 pool.push(blah, i);
+	 std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+	 std::cout << i << std::endl;
  }
 
  void test2(){
@@ -73,26 +87,66 @@ void dummy4Arg(int i, int j, int k, int l){
  void test5(){
 
      try{
-        pool.resize(45);
+        pool.resize(4);
      }
      catch(bad_thread_alloc& e){
          std::cout << e.what() << std::endl;
      }
 
  }
+
+ void foo() {
+
+	 auto test = std::bind(dummyRtn);
+	 auto lol = test();
+	 std::cout << lol << std::endl;
+
+ }
+
+
+
 int main(){
 
-    test1();
+	std::vector<std::shared_ptr<task>> jobs;
+	
+	
+	std::packaged_task<int()> f1([]() {std::cout<<"running this function" << std::endl; return 5; });
+	std::packaged_task<void()> f2([]() {});
+	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<int()>>>(std::move(f1)));
+	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<void()>>>(std::move(f2)));
 
-    test2();
+	//std::packaged_task<int()> j = std::move(std::packaged_task<int()>((*jobs[0]).f.unc));
+	auto& j = std::move(dynamic_cast<AnyTask<std::packaged_task<int()>>&>(*jobs[0]));
+	//auto j = std::move((*jobs[0]).func);
+	//std::cout << typeid(j.func).name() << std::endl;
+	std::cout << j.func();
 
-    test1();
-    
+
+	//std::shared_ptr<std::packaged_task<void()>> j = (std::shared_ptr<std::packaged_task<void()>>)jobs[1];
+	
+	//std::vector<std::future<int()>> futures;
+	//std::queue<std::packaged_task<int()>> q;
+	//std::packaged_task<int()> f(foo);
+	//auto fut = f.get_future();
+	//q.push(std::move(f));
+
+	//std::thread th(std::move(q.front()));
+	//int res = fut.get();
+	//std::packaged_task<void()> j = std::move(q.front());
+	//auto test = j();
+
+	//foo();
+
+   // test1();
+
+    //test2();
+
+    //test1();
     //must wait. Sometimes the main program will end before the threads finish executing their job. The thrteads then get killed early
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    test4();
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //test4();
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    test5();
+    //test5();
 }
