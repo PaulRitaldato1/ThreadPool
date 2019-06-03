@@ -43,6 +43,11 @@ int dummyRtn() {
 	std::cout << "in rtn" << std::endl;
 	return 1;
 }
+
+int dummy1ArgRtn(int i) {
+	std::cout << "Arg Passed in: " << i << std::endl;
+	return i;
+}
 void blah(int& i) {
 
 	i += 10;
@@ -103,23 +108,52 @@ void blah(int& i) {
 
  }
 
+ class task {
+ public:
+	 virtual ~task() {}
+	 int func;
+ };
+
+ template <typename T>
+ class AnyTask : virtual public task {
+ public:
+	 AnyTask(T func) : func(std::move(func)) {}
+	 T func;
+ };
 
 
 int main(){
 
+	push_test(dummy1ArgRtn,1);
 	std::vector<std::shared_ptr<task>> jobs;
 	
 	
 	std::packaged_task<int()> f1([]() {std::cout<<"running this function" << std::endl; return 5; });
 	std::packaged_task<void()> f2([]() {});
-	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<int()>>>(std::move(f1)));
+	std::packaged_task<int()> f3(std::move(std::bind(dummy1ArgRtn, 1)));
+	auto fut1 = f1.get_future();
+	auto fut3 = f3.get_future();
+
+	std::function<void()> b1 = std::bind(std::move(f1));
+
+	//std::cout << typeid(fut1).name() << std::endl;
+	//jobs.push_back(std::make_shared<AnyTask<std::packaged_task<int()>>>(std::move(f1)));
 	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<void()>>>(std::move(f2)));
+	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<int()>>>(std::move(f3)));
+
 
 	//std::packaged_task<int()> j = std::move(std::packaged_task<int()>((*jobs[0]).f.unc));
-	auto& j = std::move(dynamic_cast<AnyTask<std::packaged_task<int()>>&>(*jobs[0]));
+	auto& j = std::move(dynamic_cast<AnyTask<std::packaged_task<void()>>&>(*jobs[1]));
 	//auto j = std::move((*jobs[0]).func);
 	//std::cout << typeid(j.func).name() << std::endl;
-	std::cout << j.func();
+	j.func();
+	//f3();
+
+	if (fut3.valid())
+		std::cout << fut3.get() << std::endl;
+	else
+		std::cout << "not valid" << std::endl;
+
 
 
 	//std::shared_ptr<std::packaged_task<void()>> j = (std::shared_ptr<std::packaged_task<void()>>)jobs[1];
@@ -143,7 +177,7 @@ int main(){
 
     //test1();
     //must wait. Sometimes the main program will end before the threads finish executing their job. The thrteads then get killed early
-    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
     //test4();
     //std::this_thread::sleep_for(std::chrono::milliseconds(500));

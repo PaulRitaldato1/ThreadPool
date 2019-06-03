@@ -15,18 +15,35 @@
 #include<future>
 #include<utility>
 
+template <typename Func, typename... Args >
+void push_test(Func&& f, Args&&... args) {
 
-class task {
-public:
-	virtual ~task() {}
-	int func;
-};
-template <typename T>
-class AnyTask : virtual public task {
-public:
-	AnyTask(T func) : func(std::move(func)) {}
-	T func;
-};
+	//for some reason this doesnt give me the return type
+	//typedef typename std::decay<Func>&& funcType;
+	//typedef typename std::invoke_result<funcType(Args...)> retType;
+
+	//this does though
+	typedef decltype(f(args...)) retType;
+
+	std::packaged_task<retType()> task(std::move(std::bind(f, args...)));
+
+	if constexpr (!std::is_same<retType, void>::value) {
+		auto future = task.get_future();
+		std::cout << typeid(future).name() << std::endl;
+		std::cout << "Not void!" << std::endl;
+	}
+	else {
+		std::cout << "Function returns void" << std::endl;
+	}
+
+
+
+	retType i;
+	std::cout << typeid(i).name() << std::endl;
+
+
+
+}
 
 
 //portable way to null the copy and assignment operators
@@ -84,17 +101,43 @@ public:
 
     //add any arg # function to queue
     template <typename Func, typename... Args >
-    inline uint64_t push(Func& f, Args&&... args){
-        auto funcToAdd = std::bind(f, args...);
+    inline uint64_t push(Func&& f, Args&&... args){
+
+		//create a unique ID for the new job
+		uint64_t newID = currentID++;
+		
+		//for some reason this doesnt give me the return type
+		//typedef typename std::decay<Func>&& funcType;
+		//typedef typename std::invoke_result<funcType(Args...)> retType;
+
+		//this does though
+		typedef decltype(f(args...)) retType;
+
+		//package the task
+		std::packaged_task<retType()> task(std::move(std::bind(f, args...)));
+
+		if constexpr(!std::is_same<retType, void>::value) {
+			auto future = task.get_future();
+
+			typedef decltype(future) futureType;
+			//returnMap.emplace(newID, std::shared_ptr<AnyFuture<futureType>>(std::move(future)));
+		}
+		else {
+			returnMap.insert({ newID, std::shared_ptr<Future>(nullptr) });
+		}
+
+		// lock jobqueue mutex, add job to the job queue along with its associated id
+		std::unique_lock<std::mutex> lock(JobMutex);
 		
 
-        
-		uint64_t newID = currentID++;
-		std::unique_lock<std::mutex> lock(JobMutex);
-		//typename std::invoke_result<Func, Args...>::type tempType;
-        JobQueue.push(std::make_pair(funcToAdd, newID));
+
+		//JobQueue.push({ newID, AnyJob<std::packaged_task<retType()>> > (std::move(task)) });
+
+		//notify a thread that there is a new job
         thread.notify_one();
-		return newID; //return the ID of the job in the queue
+
+		//return the ID of the job in the queue so the user can use the id to get a return value
+		return newID; 
     }
 
     /* map function (similar to pythons map function) */
@@ -127,18 +170,42 @@ public:
 	}
 
 private:
+	class Job {
+	public:
+		virtual ~Job() {}
+		int func;
+	};
 
-	class future {};
-	template <class T>
-	class futureOf : public future {};
-	std::map<uint64_t, std::shared_ptr<future>> returnMap;
+	template <typename FuncType>
+	class AnyJob : virtual public Job {
+	public:
+		AnyJob(FuncType func) : func(std::move(func)) {}
+		FuncType func;
+	};
 
-	uint64_t currentID;
-    uint8_t numThreads;
+	class Future {
+	public:
+		virtual ~Future() {}
+		int future;
+	};
+
+	template <typename FutureType>
+	class AnyFuture : virtual public Future {
+	public:
+			AnyFuture(FutureType future) : future(std::move(future)) {}
+		FutureType future;
+	};
+
+
+	std::map<uint64_t, std::shared_ptr<Future>> returnMap; // JobID is key, future value is the value
+
+	uint64_t currentID; //used to assign ID values to jobs
+    uint8_t numThreads; // number of threads in the pool
     std::vector<std::thread> Pool; //the actual thread pool
-    std::queue<std::pair<std::function<void()>, uint64_t>> JobQueue; //the jobs with their assigned ID
-    std::condition_variable thread;
-    std::mutex JobMutex;
+	std::queue<std::pair<uint64_t, std::shared_ptr<Job>>> JobQueue;
+    //std::queue<std::pair<std::function<void()>, uint64_t>> JobQueue; //the jobs with their assigned ID
+    std::condition_variable thread;// used to notify threads about available jobs
+    std::mutex JobMutex; // used to push/pop jobs to/from the queue
 
     /* infinite loop function */
     void threadManager();
@@ -177,8 +244,12 @@ void ThreadPool::threadManager(){
 		if (JobQueue.size() < 1)
 			continue;
 
-		auto job = JobQueue.front().first;
+		uint64_t jobID = JobQueue.front().first;
+		if (returnMap[jobID]) {
+			//auto& job = std::move(dynamic_cast<AnyJob<std::packaged_task<()>>&>)JobQueue.front().second;
+			
+		}
 		JobQueue.pop();
-		job();
+		//job();
     }
 }
