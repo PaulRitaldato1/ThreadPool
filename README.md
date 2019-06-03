@@ -17,15 +17,23 @@ void jobWithArgs(int arg){
 }
 int main () {
   
+  auto job = [](){ std::cout << "inside job" << std::endl;};
+  auto jobWithArgs[](int i){std::cout << "inside jobWithArgs, arg passed in is: " << std::endl;};
+  auto jobWithReturn[](){ return std::string("returned from jobWithReturn");};
+  
   //the pool will only allow you to make any number of threads as long as its less than your max thread count
   ThreadPool& pool = ThreadPool::getInstance(5); //creates an instance of the threadpool with 5 threads (if one hasnt been created)
   
   pool.push(job); //this is how you pass it a job. Easy as that!
+  pool.push(jobWithArgs, 1); //this is how you pass it a job with arguments. Easy!
   
-  //Return types are accepted but NOT checked. There is no way to get a return value from these jobs
-  //to give a job with arguments (up to 4 arguments are supported) simply call "push" as follows
-  //the "push" function is using a variadic template, so just call push with the function as the first param and the args as the rest
-  pool.push(jobWithArgs, 5);
+  //ThreadPool::push actually returns a future variable for the functions return type that you gave it.
+  //To access the returned value just use "auto <varname> = pool.push()" or "future<type> <varname> = pool.push()".
+  //Using auto allows you to not need to remember what the return type of the function is.
+  auto future = pool.push(jobWithReturn); 
+  
+  //Now with the future variable from the push function, just use "future.get()" to access the data!
+  std::string returnedString = future.get(); //future.get() blocks until the value is ready to be obtained
   
   }
 ```
