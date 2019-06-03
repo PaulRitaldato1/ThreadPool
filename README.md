@@ -8,13 +8,6 @@ The ThreadPool class is a Singleton. So here is an example of how to use it.
 ```c++
 #include "ThreadPool.h"
 
-void job(){
-  //do stuff
-}
-
-void jobWithArgs(int arg){
-  //do stuff
-}
 int main () {
   
   auto job = [](){ std::cout << "inside job" << std::endl;};
