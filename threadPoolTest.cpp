@@ -41,12 +41,12 @@ void dummy4Arg(int i, int j, int k, int l){
 
 int dummyRtn() {
 	std::cout << "in rtn" << std::endl;
-	return 1;
+	return 5;
 }
 
-int dummy1ArgRtn(int i) {
+std::string dummy1ArgRtn(int i) {
 	std::cout << "Arg Passed in: " << i << std::endl;
-	return i;
+	return "Hello There";
 }
 void blah(int& i) {
 
@@ -109,50 +109,78 @@ void blah(int& i) {
  }
 
  class task {
+ private:
+	 std::packaged_task<void()> func;
+
  public:
 	 virtual ~task() {}
-	 int func;
+	 virtual void execute() = 0;
  };
 
  template <typename T>
- class AnyTask : virtual public task {
+ class AnyTask :  public task {
+ private:
+	 std::packaged_task<T()> func;
  public:
-	 AnyTask(T func) : func(std::move(func)) {}
-	 T func;
+	 AnyTask(std::packaged_task<T()> func) : func(std::move(func)) {}
+
+	 void execute() {
+		 func();
+	 }
+
  };
 
+ class Future {
+ public:
+	 virtual ~Future() {}
+	 std::future<void> future;
+ };
+
+ template <typename FutureType>
+ class AnyFuture : public Future {
+ public:
+	 AnyFuture(std::future<FutureType> future) : future(std::move(future)) {}
+	 std::future<FutureType> future;
+ };
 
 int main(){
 
-	push_test(dummy1ArgRtn,1);
-	std::vector<std::shared_ptr<task>> jobs;
-	
-	
-	std::packaged_task<int()> f1([]() {std::cout<<"running this function" << std::endl; return 5; });
-	std::packaged_task<void()> f2([]() {});
-	std::packaged_task<int()> f3(std::move(std::bind(dummy1ArgRtn, 1)));
-	auto fut1 = f1.get_future();
-	auto fut3 = f3.get_future();
+	//push_test(dummy1ArgRtn, 1);
+	//std::vector<std::shared_ptr<task>> jobs;
+	//std::vector<std::shared_ptr<Future>> futures;
+	//
+	//std::packaged_task<int()> f1([]() {std::cout<<"running this function" << std::endl; return 5; });
+	//std::packaged_task<void()> f2([]() {});
+	//std::packaged_task<int()> f3(std::move(std::bind(dummy1ArgRtn, 1)));
+	//std::future<int> fut1 = f1.get_future();
+	//std::future<void> fut2 = f2.get_future();
+	//std::future<int> fut3 = f3.get_future();
 
-	std::function<void()> b1 = std::bind(std::move(f1));
+	//futures.reserve(3);
+	//futures.emplace_back(std::make_shared<AnyFuture<int>>(std::move(fut1)));
+	//futures.emplace_back(std::make_shared<AnyFuture<void>>(std::move(fut2)));
+	//futures.emplace_back(std::make_shared<AnyFuture<int>>(std::move(fut3)));
 
-	//std::cout << typeid(fut1).name() << std::endl;
-	//jobs.push_back(std::make_shared<AnyTask<std::packaged_task<int()>>>(std::move(f1)));
-	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<void()>>>(std::move(f2)));
-	jobs.push_back(std::make_shared<AnyTask<std::packaged_task<int()>>>(std::move(f3)));
+	////std::function<void()> b1 = std::bind(std::move(f1));
+
+	////std::cout << typeid(fut1).name() << std::endl;
+	//jobs.push_back(std::make_shared<AnyTask<int>>(std::move(f1)));
+	//jobs.push_back(std::make_shared<AnyTask<void>>(std::move(f2)));
+	//jobs.push_back(std::make_shared<AnyTask<int>>(std::move(f3)));	
 
 
-	//std::packaged_task<int()> j = std::move(std::packaged_task<int()>((*jobs[0]).f.unc));
-	auto& j = std::move(dynamic_cast<AnyTask<std::packaged_task<void()>>&>(*jobs[1]));
-	//auto j = std::move((*jobs[0]).func);
-	//std::cout << typeid(j.func).name() << std::endl;
-	j.func();
-	//f3();
+	////std::packaged_task<int()> j = std::move(std::packaged_task<int()>((*jobs[0]).f.unc));
+	//(*jobs[0]).execute();
+	////task j = std::move(*jobs[0]);
+	////auto j = std::move((*jobs[0]).func);
+	////std::cout << typeid(j.func).name() << std::endl;
+	////f3();
+	//auto& f = std::move(static_cast<AnyFuture<int>&>(*futures[0]));
 
-	if (fut3.valid())
-		std::cout << fut3.get() << std::endl;
-	else
-		std::cout << "not valid" << std::endl;
+	//if (f.future.valid())
+	//	std::cout << "Getting future value: " << f.future.get() << std::endl;
+	//else
+	//	std::cout << "not valid" << std::endl;
 
 
 
@@ -171,7 +199,7 @@ int main(){
 
 	//foo();
 
-   // test1();
+	//test1();
 
     //test2();
 
