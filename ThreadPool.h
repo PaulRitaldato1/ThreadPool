@@ -3,57 +3,20 @@
 #include<thread>
 #include<vector>
 #include<queue>
-#include<exception>
-#include<string>
 #include<mutex>
 #include<condition_variable>
 #include<functional>
-#include<iostream>
-#include<map>
-#include<memory>
+//#include<memory>
 #include<type_traits>
 #include<future>
-#include<utility>
+//#include<utility>
 
+#define MAX_THREADS std::thread::hardware_concurrency() - 1;
 
 //portable way to null the copy and assignment operators
 #define NULL_COPY_AND_ASSIGN(T) \
 	T(const T& other) {(void)other;} \
 	void operator=(const T& other) { (void)other; }
-
-#define MAX_THREADS std::thread::hardware_concurrency() - 1;
-//#define DBG
-#ifdef DBG
-#define DEBUG(x) std::cout << x << std::endl;
-#else
-#define DEBUG(x)
-#endif
-
-//custom exception for handling out of bounds thread creation or any bad allocation of threads
-struct bad_thread_alloc : public std::exception {
-
-private:
-     std::string info;
-     std::string file;
-    int line;
-
-
-public:
-   const char* what() const throw() {
-        std::string what = "bad_thread_alloc: " + info + " on line " + std::to_string(line) + " in file " + file;
-        return what.c_str();
-    }
-
-    bad_thread_alloc(const std::string info, char* file, int line)
-    {
-        //std::string tmp(file);
-        //this->file = tmp;
-        this->info = info;
-        this->line = line;
-    }
-}; 
-
-
 
 /* ThreadPool class
 It is a singleton, meaning there may only be one instance of this class at a time.
@@ -100,12 +63,13 @@ public:
         
         int tmp = MAX_THREADS;
         if(newTCount > tmp || newTCount < 1){
-            throw bad_thread_alloc("Cannot allocate " + std::to_string(newTCount) + " threads because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
+            numThreads = MAX_THREADS;
+	    Pool.resize(newTCount);
+	    return;	
         }
         
         numThreads = (uint8_t)newTCount;
         Pool.resize(newTCount);
-        DEBUG("New size is: " + std::to_string(Pool.size()));
     }
 
     inline uint8_t getThreadCount(){
@@ -157,9 +121,7 @@ private:
         for(int i = 0; i != numThreads; ++i){
             Pool.push_back(std::thread(&ThreadPool::threadManager, this));
             Pool.back().detach();
-            DEBUG("Thread " + std::to_string(i) + " allocated");
         }
-        DEBUG("Number of threads being allocated " + std::to_string(numThreads));
     }
     /* end constructors */
 
