@@ -15,36 +15,6 @@
 #include<future>
 #include<utility>
 
-template <typename Func, typename... Args >
-void push_test(Func&& f, Args&&... args) {
-
-	//for some reason this doesnt give me the return type
-	//typedef typename std::decay<Func>::type funcType;
-	//typedef typename std::invoke_result<funcType(Args...)> retTypeTest;
-
-	//this does though
-	typedef decltype(f(args...)) retType;
-
-	std::packaged_task<retType()> task(std::move(std::bind(f, args...)));
-
-	if (!std::is_same<retType, void>::value) {
-		auto future = task.get_future();
-		std::cout << typeid(future).name() << std::endl;
-		std::cout << "Not void!" << std::endl;
-	}
-	else {
-		std::cout << "Function returns void" << std::endl;
-	}
-
-
-
-	//retTypeTest i;
-	//std::cout << typeid(i).name() << std::endl;
-
-
-
-}
-
 
 //portable way to null the copy and assignment operators
 #define NULL_COPY_AND_ASSIGN(T) \
