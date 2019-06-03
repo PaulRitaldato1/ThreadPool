@@ -14,7 +14,7 @@ int main () {
   auto jobWithArgs[](int i){std::cout << "inside jobWithArgs, arg passed in is: " << std::endl;};
   auto jobWithReturn[](){ return std::string("returned from jobWithReturn");};
   
-  //the pool will only allow you to make any number of threads as long as its less than your max thread count
+  //the pool will allow you to make any number of threads as long as its less than your max thread count
   ThreadPool& pool = ThreadPool::getInstance(5); //creates an instance of the threadpool with 5 threads (if one hasnt been created)
   
   pool.push(job); //this is how you pass it a job. Easy as that!
