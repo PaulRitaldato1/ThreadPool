@@ -6,10 +6,7 @@
 #include<mutex>
 #include<condition_variable>
 #include<functional>
-//#include<memory>
-#include<type_traits>
 #include<future>
-//#include<utility>
 
 #define MAX_THREADS std::thread::hardware_concurrency() - 1;
 
@@ -63,22 +60,34 @@ public:
         
         int tmp = MAX_THREADS;
         if(newTCount > tmp || newTCount < 1){
+			tmp = numThreads;
             numThreads = MAX_THREADS;
-	    Pool.resize(newTCount);
-	    return;	
+			Pool.resize(newTCount);
+			for (int i = tmp; i != numThreads; ++i) {
+				Pool.emplace_back(std::thread(&ThreadPool::threadManager, this));
+				Pool.back().detach();
+			}
         }
+		else if (newTCount > numThreads) {
+			uint8_t tmp = numThreads;
+			numThreads = newTCount;
+			Pool.resize(numThreads);
+			for (int i = tmp; i != numThreads; ++i) {
+				Pool.emplace_back(std::thread(&ThreadPool::threadManager, this));
+				Pool.back().detach();
+			}
+		}
+		else {
+			numThreads = (uint8_t)newTCount;
+			Pool.resize(newTCount);
+		}
         
-        numThreads = (uint8_t)newTCount;
-        Pool.resize(newTCount);
+
     }
 
     inline uint8_t getThreadCount(){
         return numThreads;
     }
-	
-	auto getReturnValue(uint64_t jobID) {
-		//Not sure how to handle this
-	}
 
 private:
 	class Job {
@@ -107,7 +116,21 @@ private:
 	std::mutex JobMutex; // used to push/pop jobs to/from the queue
 
     /* infinite loop function */
-    void threadManager();
+	inline void threadManager() {
+		while (true) {
+
+			std::unique_lock<std::mutex> lock(JobMutex);
+			thread.wait(lock, [this] {return !JobQueue.empty(); });
+
+			//strange bug where it will continue even if the job queue is empty
+			if (JobQueue.size() < 1)
+				continue;
+
+			(*JobQueue.front()).execute();
+
+			JobQueue.pop();
+		}
+	}
 
     /*  Constructors */
     ThreadPool(); //prevent default constructor from being called
@@ -116,10 +139,11 @@ private:
     inline ThreadPool(uint8_t numThreads) : numThreads(numThreads) {
         int tmp = MAX_THREADS;
         if(numThreads > tmp){
-            throw bad_thread_alloc("Cannot allocate " + std::to_string(numThreads) + " threads because it is greater than your systems maximum of " + std::to_string(tmp), __FILE__, __LINE__);
-        }
+			numThreads = tmp;
+		}
+		Pool.reserve(numThreads);
         for(int i = 0; i != numThreads; ++i){
-            Pool.push_back(std::thread(&ThreadPool::threadManager, this));
+            Pool.emplace_back(std::thread(&ThreadPool::threadManager, this));
             Pool.back().detach();
         }
     }
@@ -128,21 +152,3 @@ private:
 
 NULL_COPY_AND_ASSIGN(ThreadPool);
 }; /* end ThreadPool Class */
-
-
-void ThreadPool::threadManager(){
-
-	while (true) {
-
-		std::unique_lock<std::mutex> lock(JobMutex);
-		thread.wait(lock, [this] {return !JobQueue.empty(); });
-
-		//strange bug where it will continue even if the job queue is empty
-		if (JobQueue.size() < 1)
-			continue;
-
-		(*JobQueue.front()).execute();
-			
-		JobQueue.pop();
-    }
-}

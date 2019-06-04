@@ -1,6 +1,8 @@
 #include "ThreadPool.h"
 #include <chrono>
 #include <string>
+#include <iostream>
+
 ThreadPool& pool = ThreadPool::getInstance(7);
 static int counts[5] = {0};
 /* dummy jobs to pass to the pool*/
@@ -46,67 +48,13 @@ int dummyRtn() {
 
 std::string dummy1ArgRtn(int i) {
 	std::cout << "Arg Passed in: " << i << std::endl;
-	return "Hello There";
+	std::string s = "Hello There";
+	return s;
 }
 void blah(int& i) {
 
 	i += 10;
 }
-/* tests*/
- void test1(){
-     pool.push(dummyNoArg);
-     pool.push(dummy1Arg, 1);
-     pool.push(dummy2Arg, 2, 2);
-     pool.push(dummy3Arg, 3, 3, 3);
-     pool.push(dummy4Arg, 4, 4, 4, 4);
-
-	 pool.push(dummyRtn);
-
-	 int i = 5;
-	 auto f = [](int &i) {i += 10; };
-	 pool.push(blah, i);
-	 std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-	 std::cout << i << std::endl;
- }
-
- void test2(){
-     pool.resize(1);
-     if(pool.getThreadCount() == 1){
-         std::cout << "Resize test passed" <<std::endl;
-         return;
-     }
-     std::cout << "Resize failed" <<std::endl;
- }
-
- void test4(){
-    for(int count : counts){
-        if(count != 2){
-            std::cout << "Failed test 4" << std::endl;
-            return;
-        }
-    }
-    std::cout << "Test 4 Pass" << std::endl;
- }
-
- void test5(){
-
-     try{
-        pool.resize(4);
-     }
-     catch(bad_thread_alloc& e){
-         std::cout << e.what() << std::endl;
-     }
-
- }
-
- void foo() {
-
-	 auto test = std::bind(dummyRtn);
-	 auto lol = test();
-	 std::cout << lol << std::endl;
-
- }
 
  class task {
  private:
@@ -130,6 +78,15 @@ void blah(int& i) {
 
  };
 
+ int busy() {
+	
+	 uint64_t ret = 0;;
+	 for (uint32_t i = 0; i != 100000; ++i) {
+		 ret *= i;
+	 }
+	 return ret;
+ }
+
  class Future {
  public:
 	 virtual ~Future() {}
@@ -144,7 +101,31 @@ void blah(int& i) {
  };
 
 int main(){
+	auto start = std::chrono::high_resolution_clock::now();
+	auto ret1 = pool.push(busy);
+	auto ret2 = pool.push(busy);
+	auto ret3 = pool.push(busy);
+	auto ret4 = pool.push(busy);
+	auto ret5 = pool.push(busy);
 
+	ret1.get();
+	ret2.get();
+	ret3.get();
+	ret4.get();
+	ret5.get();
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+	std::cout << duration.count() << std::endl;
+
+	start = std::chrono::high_resolution_clock::now();
+	uint64_t r1 = busy();
+	uint64_t r2 = busy();
+	uint64_t r3 = busy();
+	uint64_t r4 = busy();
+	uint64_t r5 = busy();
+	stop = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+	std::cout << duration.count() << std::endl;
 	//push_test(dummy1ArgRtn, 1);
 	//std::vector<std::shared_ptr<task>> jobs;
 	//std::vector<std::shared_ptr<Future>> futures;
@@ -211,4 +192,5 @@ int main(){
     //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     //test5();
+	return 0;
 }
