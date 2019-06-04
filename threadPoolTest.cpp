@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 
-ThreadPool& pool = ThreadPool::getInstance(7);
+ThreadPool pool(5);
 static int counts[5] = {0};
 /* dummy jobs to pass to the pool*/
 void dummyNoArg(){
@@ -81,7 +81,7 @@ void blah(int& i) {
  int busy() {
 	
 	 uint64_t ret = 0;;
-	 for (uint32_t i = 0; i != 100000; ++i) {
+	 for (uint32_t i = 0; i != 100000000; ++i) {
 		 ret *= i;
 	 }
 	 return ret;
@@ -101,7 +101,23 @@ void blah(int& i) {
  };
 
 int main(){
+ /*busy();
+busy();
+busy();
+busy();
+ busy();*/
+
 	auto start = std::chrono::high_resolution_clock::now();
+	uint64_t r1 = busy();
+	uint64_t r2 = busy();
+	uint64_t r3 = busy();
+	uint64_t r4 = busy();
+	uint64_t r5 = busy();
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+	std::cout << duration.count() << std::endl;
+
+	 start = std::chrono::high_resolution_clock::now();
 	auto ret1 = pool.push(busy);
 	auto ret2 = pool.push(busy);
 	auto ret3 = pool.push(busy);
@@ -113,19 +129,10 @@ int main(){
 	ret3.get();
 	ret4.get();
 	ret5.get();
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+	 stop = std::chrono::high_resolution_clock::now();
+	 duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 	std::cout << duration.count() << std::endl;
 
-	start = std::chrono::high_resolution_clock::now();
-	uint64_t r1 = busy();
-	uint64_t r2 = busy();
-	uint64_t r3 = busy();
-	uint64_t r4 = busy();
-	uint64_t r5 = busy();
-	stop = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-	std::cout << duration.count() << std::endl;
 	//push_test(dummy1ArgRtn, 1);
 	//std::vector<std::shared_ptr<task>> jobs;
 	//std::vector<std::shared_ptr<Future>> futures;
