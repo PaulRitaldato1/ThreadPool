@@ -1,6 +1,7 @@
 # ThreadPool
 I needed an easy to use thread pool for C++ for my game engine project, so here it goes.
 
+All you need to do is include the header file and done!
 ## Usage
 The ThreadPool class is a Singleton. So here is an example of how to use it.
 
