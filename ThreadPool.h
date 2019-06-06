@@ -36,7 +36,10 @@ public:
     //add any arg # function to queue
     template <typename Func, typename... Args >
     auto push(Func&& f, Args&&... args){
-
+		
+	    	if(std::is_bind_expresssion<decltype(f)>::type){
+			throw "Do not pass a result of std::bind to ThreadPool::push!";
+		}
 		//get return type of the function
 		typedef decltype(f(args...)) retType;
 
