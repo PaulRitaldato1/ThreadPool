@@ -22,7 +22,7 @@ int main () {
   //the pool will allow you to make any number of threads up to 255
   ThreadPool pool(5); //creates an instance of the threadpool with 5 threads
   //or
-  ThreadPool pool2(); // Create a default pool with the number of threads on your cpu
+  ThreadPool pool2; // Create a default pool with the number of threads on your cpu
   
   /* ================== Adding Jobs to the Queue/Obtaining Return Values ================== */
   
