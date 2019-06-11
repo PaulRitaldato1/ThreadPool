@@ -13,8 +13,8 @@ int main () {
   
   /* ================== Example Functions ================== */
   auto job = [](){ std::cout << "inside job" << std::endl;};
-  auto jobWithArgs[](int i){std::cout << "inside jobWithArgs, arg passed in is: " << std::endl;};
-  auto jobWithReturn[](){ return std::string("returned from jobWithReturn");};
+  auto jobWithArgs = [](int i){std::cout << "inside jobWithArgs, arg passed in is: " << std::endl;};
+  auto jobWithReturn = [](){ return std::string("returned from jobWithReturn");};
   
   
    /* ================== Creating a Pool ================== */
@@ -22,7 +22,7 @@ int main () {
   //the pool will allow you to make any number of threads up to 255
   ThreadPool pool(5); //creates an instance of the threadpool with 5 threads
   //or
-  ThreadPool pool2(); // Create a default pool with the number of threads on your cpu
+  ThreadPool pool2; // Create a default pool with the number of threads on your cpu
   
   /* ================== Adding Jobs to the Queue/Obtaining Return Values ================== */
   

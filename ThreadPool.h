@@ -15,7 +15,7 @@
 	void operator=(const T& other) = delete;
 
 /* ThreadPool class
-Still a singleton while I consider removing it */
+No longer a singleton */
 class ThreadPool{
 public:
 	/*  Constructors */
