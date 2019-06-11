@@ -45,3 +45,6 @@ int main () {
   
   }
 ```
+
+#What's Next?
+The only other feature I would like to add is the ability to kill threads instead of detaching them. This will be the next feature as I do not like having threads running after main().
