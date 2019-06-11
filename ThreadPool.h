@@ -37,14 +37,14 @@ public:
     template <typename Func, typename... Args >
     auto push(Func&& f, Args&&... args){
 		
-	    	if(std::is_bind_expresssion<decltype(f)>::type){
+	    if(std::is_bind_expression<decltype(f)>::value){
 			throw "Do not pass a result of std::bind to ThreadPool::push!";
 		}
 		//get return type of the function
 		typedef decltype(f(args...)) retType;
 
 		//package the task
-		std::packaged_task<retType()> task(std::move(std::bind(f, args...)));
+		std::packaged_task<retType()> task(std::bind(f, args...));
 		
 		//get the future from the task before the task is moved into the jobqueue
 		std::future<retType> future = task.get_future();
@@ -55,7 +55,8 @@ public:
 			std::unique_lock<std::mutex> lock(JobMutex);
 
 			//place the job into the queue
-			JobQueue.emplace(std::make_shared<AnyJob<retType> >(std::move(task)));
+			JobQueue.emplace(std::packaged_task<void()>(std::move(task)));
+			//JobQueue.emplace(std::make_shared<AnyJob<retType> >(std::move(task)));
 		}
 		//notify a thread that there is a new job
         thread.notify_one();
@@ -71,31 +72,33 @@ public:
     }
 
 private:
-	class Job {
-	public:
-		virtual void execute() = 0;
-	};
 
-	template <typename RetType>
-	class AnyJob : public Job {
-	private:
-		std::packaged_task<RetType()> func;
-	public:
-		AnyJob(std::packaged_task<RetType()> func) : func(std::move(func)) {}
-		void execute() {
-			func();
-		}
-	};
+//used polymorphism to store any job type, turns out this is not needed. The type erasure that i was manually doing here, is handled by std::packaged_task<void()>
+	// class Job {
+	// public:
+	// 	virtual void execute() = 0;
+	// };
+
+	// template <typename RetType>
+	// class AnyJob : public Job {
+	// private:
+	// 	std::packaged_task<RetType()> func;
+	// public:
+	// 	AnyJob(std::packaged_task<RetType()> func) : func(std::move(func)) {}
+	// 	void execute() {
+	// 		func();
+	// 	}
+	// };
 
     std::vector<std::thread> Pool; //the actual thread pool
-	std::queue<std::shared_ptr<Job>> JobQueue;
+	std::queue<std::packaged_task<void()>> JobQueue;
     std::condition_variable thread;// used to notify threads about available jobs
 	std::mutex JobMutex; // used to push/pop jobs to/from the queue
 
 	void createThreads(uint8_t numThreads) {
 		auto threadFunc = [this]() {
 			while (true) {
-				std::shared_ptr<Job> job;
+				std::packaged_task<void()> job;
 				//create a new scope so the unique lock will unlock when its no longer needed
 				//profiling revealed that this function was holding the lock while executing the function, prevent other jobs from running!
 				{
@@ -106,11 +109,12 @@ private:
 					if (JobQueue.size() < 1)
 						continue;
 
-					job = JobQueue.front();
+					job = std::move(JobQueue.front());
 
 					JobQueue.pop();
 				}
-				(*job).execute();
+				job();
+				//(*job).execute();
 			}
 
 		};
