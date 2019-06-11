@@ -13,8 +13,8 @@ int main () {
   
   /* ================== Example Functions ================== */
   auto job = [](){ std::cout << "inside job" << std::endl;};
-  auto jobWithArgs[](int i){std::cout << "inside jobWithArgs, arg passed in is: " << std::endl;};
-  auto jobWithReturn[](){ return std::string("returned from jobWithReturn");};
+  auto jobWithArgs = [](int i){std::cout << "inside jobWithArgs, arg passed in is: " << std::endl;};
+  auto jobWithReturn = [](){ return std::string("returned from jobWithReturn");};
   
   
    /* ================== Creating a Pool ================== */
