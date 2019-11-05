@@ -43,13 +43,10 @@ public:
 		//get return type of the function
 		typedef decltype(f(args...)) retType;
 
-		//package the task
 		std::packaged_task<retType()> task(std::bind(f, args...));
 		
-		//get the future from the task before the task is moved into the jobqueue
 		std::future<retType> future = task.get_future();
 
-		//create a new scope so the lock will unlock before notify
 		{
 			// lock jobqueue mutex, add job to the job queue 
 			std::unique_lock<std::mutex> lock(JobMutex);
@@ -58,10 +55,8 @@ public:
 			JobQueue.emplace(std::packaged_task<void()>(std::move(task)));
 			//JobQueue.emplace(std::make_shared<AnyJob<retType> >(std::move(task)));
 		}
-		//notify a thread that there is a new job
         	thread.notify_one();
 
-		//return the future for the function so the user can get the return value
 		return future;
     }
 
@@ -90,16 +85,16 @@ private:
 	// 	}
 	// };
 
-    	std::vector<std::thread> Pool; //the actual thread pool
+    	std::vector<std::thread> Pool;
 	std::queue<std::packaged_task<void()>> JobQueue;
-    	std::condition_variable thread;// used to notify threads about available jobs
-	std::mutex JobMutex; // used to push/pop jobs to/from the queue
+    	std::condition_variable thread;
+	std::mutex JobMutex;
 
 	void createThreads(uint8_t numThreads) {
 		auto threadFunc = [this]() {
 			while (true) {
 				std::packaged_task<void()> job;
-				//create a new scope so the unique lock will unlock when its no longer needed
+				
 				{
 					std::unique_lock<std::mutex> lock(JobMutex);
 					thread.wait(lock, [this] {return !JobQueue.empty(); });
