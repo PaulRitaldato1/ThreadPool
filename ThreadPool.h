@@ -7,6 +7,7 @@
 #include<condition_variable>
 #include<functional>
 #include<future>
+#include <assert.h>
 
 //updated C++11 and on way to null copy and assign
 //I like to keep it as a macro for big projects so I can just call it on any class
@@ -37,9 +38,8 @@ public:
     template <typename Func, typename... Args >
     auto push(Func&& f, Args&&... args){
 		
-	    if(std::is_bind_expression<decltype(f)>::value){
-			throw "Do not pass a result of std::bind to ThreadPool::push!";
-		}
+	    	assert(!std::is_bind_expression<decltype(f)>::value);
+
 		//get return type of the function
 		typedef decltype(f(args...)) retType;
 
@@ -59,7 +59,7 @@ public:
 			//JobQueue.emplace(std::make_shared<AnyJob<retType> >(std::move(task)));
 		}
 		//notify a thread that there is a new job
-        thread.notify_one();
+        	thread.notify_one();
 
 		//return the future for the function so the user can get the return value
 		return future;
@@ -90,9 +90,9 @@ private:
 	// 	}
 	// };
 
-    std::vector<std::thread> Pool; //the actual thread pool
+    	std::vector<std::thread> Pool; //the actual thread pool
 	std::queue<std::packaged_task<void()>> JobQueue;
-    std::condition_variable thread;// used to notify threads about available jobs
+    	std::condition_variable thread;// used to notify threads about available jobs
 	std::mutex JobMutex; // used to push/pop jobs to/from the queue
 
 	void createThreads(uint8_t numThreads) {
@@ -100,7 +100,6 @@ private:
 			while (true) {
 				std::packaged_task<void()> job;
 				//create a new scope so the unique lock will unlock when its no longer needed
-				//profiling revealed that this function was holding the lock while executing the function, prevent other jobs from running!
 				{
 					std::unique_lock<std::mutex> lock(JobMutex);
 					thread.wait(lock, [this] {return !JobQueue.empty(); });
