@@ -106,7 +106,7 @@ private:
 				
 				{
 					std::unique_lock<std::mutex> lock(JobMutex);
-					thread.wait(lock, [this] {return !jobQueue.empty(); });
+					notifier.wait(lock, [this] {return !jobQueue.empty(); });
 
 					if(shutdown){
 						break;
