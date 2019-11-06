@@ -1,9 +1,9 @@
 # ThreadPool
-I needed an easy to use thread pool for C++ for my game engine project, so here it goes.
+I needed an easy to use thread pool for my game engine project, so here it goes.
 
 All you need to do is include the header file and done!
 ## Usage
-The ThreadPool class is a Singleton. So here is an example of how to use it.
+Simply instantiate a pool like any other class
 
 
 ```c++
@@ -45,6 +45,3 @@ int main () {
   
   }
 ```
-
-# What's Next?
-The only other feature I would like to add is the ability to kill threads instead of detaching them. This will be the next feature as I do not like having threads running after main().

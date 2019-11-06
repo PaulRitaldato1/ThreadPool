@@ -1,13 +1,14 @@
 #pragma once
 
-#include<thread>
-#include<vector>
-#include<queue>
-#include<mutex>
-#include<condition_variable>
-#include<functional>
-#include<future>
+#include <thread>
+#include <vector>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <future>
 #include <assert.h>
+#include <atomic>
 
 //updated C++11 and on way to null copy and assign
 //I like to keep it as a macro for big projects so I can just call it on any class
@@ -21,24 +22,31 @@ class ThreadPool{
 public:
 	/*  Constructors */
 	ThreadPool(uint8_t numThreads) {
+		assert(numThreads > 0);
 		createThreads(numThreads);
 	}
 
 	ThreadPool() {
-		uint8_t numThreads = (uint8_t)std::thread::hardware_concurrency();
-		if (numThreads < 1) {
-			numThreads = 1;
-		}
+		const uint8_t numThreads = (uint8_t)std::thread::hardware_concurrency();
+		assert(numThreads > 0);
 		createThreads(numThreads);
 	}
 	/* end constructors */
 
+	//Destructor
+	~ThreadPool(){
+		shutdown = true;
+		notifier.notify_all();
+		for(int i = 0; i < threads.size(); ++i){
+			threads[i].join();
+		}
+	}
 
     //add any arg # function to queue
     template <typename Func, typename... Args >
     auto push(Func&& f, Args&&... args){
 		
-	    	assert(!std::is_bind_expression<decltype(f)>::value);
+	    assert(!std::is_bind_expression<decltype(f)>::value);
 
 		//get return type of the function
 		typedef decltype(f(args...)) retType;
@@ -48,14 +56,14 @@ public:
 		std::future<retType> future = task.get_future();
 
 		{
-			// lock jobqueue mutex, add job to the job queue 
+			// lock jobQueue mutex, add job to the job queue 
 			std::unique_lock<std::mutex> lock(JobMutex);
 
 			//place the job into the queue
-			JobQueue.emplace(std::packaged_task<void()>(std::move(task)));
-			//JobQueue.emplace(std::make_shared<AnyJob<retType> >(std::move(task)));
+			jobQueue.emplace(std::packaged_task<void()>(std::move(task)));
+			//jobQueue.emplace(std::make_shared<AnyJob<retType> >(std::move(task)));
 		}
-        	thread.notify_one();
+        	notifier.notify_one();
 
 		return future;
     }
@@ -63,7 +71,7 @@ public:
     /* utility functions will go here*/
    
     uint8_t getThreadCount(){
-        return Pool.size();
+        return threads.size();
     }
 
 private:
@@ -85,10 +93,11 @@ private:
 	// 	}
 	// };
 
-    	std::vector<std::thread> Pool;
-	std::queue<std::packaged_task<void()>> JobQueue;
-    	std::condition_variable thread;
+    std::vector<std::thread> threads;
+	std::queue<std::packaged_task<void()>> jobQueue;
+    std::condition_variable notifier;
 	std::mutex JobMutex;
+	std::atomic<bool> shutdown = false;
 
 	void createThreads(uint8_t numThreads) {
 		auto threadFunc = [this]() {
@@ -97,26 +106,28 @@ private:
 				
 				{
 					std::unique_lock<std::mutex> lock(JobMutex);
-					thread.wait(lock, [this] {return !JobQueue.empty(); });
+					thread.wait(lock, [this] {return !jobQueue.empty(); });
+
+					if(shutdown){
+						break;
+					}
 
 					//strange bug where it will continue even if the job queue is empty
-					if (JobQueue.size() < 1)
+					if (jobQueue.size() < 1)
 						continue;
 
-					job = std::move(JobQueue.front());
+					job = std::move(jobQueue.front());
 
-					JobQueue.pop();
+					jobQueue.pop();
 				}
 				job();
 				//(*job).execute();
 			}
 
 		};
-		Pool.reserve(numThreads);
+		threads.reserve(numThreads);
 		for (int i = 0; i != numThreads; ++i) {
-			Pool.emplace_back(std::thread(threadFunc));
-			Pool.back().detach();
-			//need help here, I could not get this to compile without using detach()
+			threads.emplace_back(std::thread(threadFunc));
 		}
 	}
 
