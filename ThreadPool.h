@@ -72,8 +72,8 @@ public:
 	template <typename Func, typename Iterator>
 	inline void map(Func&& f, Iterator& begin, Iterator& end){
 
-		static_assert(!is_iterator<begin>, "Begin argument needs to be an iterator");
-		static_assert(!is_iterator<end>, "End argument needs to be an iterator");
+		static_assert(!is_iterator<Iterator>::value, "Begin argument needs to be an iterator");
+		// static_assert(!is_iterator<end>, "End argument needs to be an iterator");
 
 		for(auto i = begin; i != end; ++i){
 			push(f, *i);
