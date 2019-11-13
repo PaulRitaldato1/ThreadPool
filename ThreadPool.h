@@ -9,6 +9,7 @@
 #include <future>
 #include <assert.h>
 #include <atomic>
+#include <type_traits>
 
 //updated C++11 and on way to null copy and assign
 //I like to keep it as a macro for big projects so I can just call it on any class
@@ -46,7 +47,7 @@ public:
     template <typename Func, typename... Args >
     auto push(Func&& f, Args&&... args){
 		
-	    assert(!std::is_bind_expression<decltype(f)>::value);
+	    static_assert(!std::is_bind_expression<decltype(f)>::value, "Cannot pass the result of a bind expression as arguments");
 
 		//get return type of the function
 		typedef decltype(f(args...)) retType;
@@ -68,6 +69,16 @@ public:
 		return future;
     }
 
+	template <typename Func, typename Iterator>
+	inline void map(Func&& f, Iterator& begin, Iterator& end){
+
+		static_assert(!is_iterator<begin>, "Begin argument needs to be an iterator");
+		static_assert(!is_iterator<end>, "End argument needs to be an iterator");
+
+		for(auto i = begin; i != end; ++i){
+			push(f, *i);
+		}
+	}
     /* utility functions will go here*/
    
     uint8_t getThreadCount(){
@@ -76,6 +87,18 @@ public:
 
 private:
 
+	//use SFINAE to determine types of template params
+	template<typename T, typename = void>
+	struct is_iterator
+	{
+		static constexpr bool value = false;
+	};
+
+	template<typename T>
+	struct is_iterator<T, typename std::enable_if<!std::is_same<typename std::iterator_traits<T>::value_type, void>::value>::type>
+	{
+		static constexpr bool value = true;
+	};
 //used polymorphism to store any job type, turns out this is not needed. The type erasure that i was manually doing here, is handled by std::packaged_task<void()>
 	// class Job {
 	// public:
