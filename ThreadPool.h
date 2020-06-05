@@ -11,8 +11,6 @@
 #include <atomic>
 #include <type_traits>
 #include <typeinfo>
-#include <string_view>
-#include "../../Global/Macros.h"
 
 /* ThreadPool class */
 class ThreadPool
