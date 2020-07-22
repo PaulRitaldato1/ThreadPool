@@ -40,7 +40,7 @@ int main () {
   /* ================== Utility Functions ================== */
   
   //gets the current thread count of the threadpool
-  std::size_t numthreads = pool.getThreadCount(); //returns a uint8_t
+  std::size_t numthreads = pool.getThreadCount(); //returns a std::size_t
  
   
   }
