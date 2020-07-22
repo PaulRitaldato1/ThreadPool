@@ -26,13 +26,13 @@ int main () {
   
   /* ================== Adding Jobs to the Queue/Obtaining Return Values ================== */
   
-  pool.push(job); //this is how you pass it a job. Easy as that!
-  pool.push(jobWithArgs, 1); //this is how you pass it a job with arguments. Easy!
+  pool.enqueue(job); //this is how you pass it a job. Easy as that!
+  pool.enqueue(jobWithArgs, 1); //this is how you pass it a job with arguments. Easy!
   
   //ThreadPool::push actually returns a future variable for the functions return type that you gave it.
   //To access the returned value just use "auto <varname> = pool.push()" or "future<type> <varname> = pool.push()".
   //Using auto allows you to not need to remember what the return type of the function is.
-  auto future = pool.push(jobWithReturn); 
+  auto future = pool.enqueue(jobWithReturn); 
   
   //Now with the future variable from the push function, just use "future.get()" to access the data!
   std::string returnedString = future.get(); //future.get() blocks until the value is ready to be obtained
