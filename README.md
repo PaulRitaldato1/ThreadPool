@@ -19,7 +19,7 @@ int main () {
   
    /* ================== Creating a Pool ================== */
    
-  //the pool will allow you to make any number of threads up to 255
+  //the pool will allow you to make any number of threads up to std::size_t
   ThreadPool<5> pool(); //creates an instance of the threadpool with 5 threads
   //or
   ThreadPool pool2; // Create a default pool with ONE thread
@@ -40,7 +40,7 @@ int main () {
   /* ================== Utility Functions ================== */
   
   //gets the current thread count of the threadpool
-  uint8_t numthreads = pool.getThreadCount(); //returns a uint8_t
+  std::size_t numthreads = pool.getThreadCount(); //returns a uint8_t
  
   
   }
