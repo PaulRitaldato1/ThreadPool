@@ -10,30 +10,40 @@
 #include <atomic>
 #include <type_traits>
 #include <typeinfo>
+#include <array>
 
 /* ThreadPool class */
+template <std::size_t PoolSize = 1>
 class ThreadPool
 {
 public:
 	/*  Constructors */
-	ThreadPool(size_t numThreads)
-	{
-		createThreads(numThreads);
-	}
-
+	//DEPRECATE TAG: Changed create threads to use compile time template param
+	//ThreadPool(std::size_t numThreads)
+	//END TAG
 	ThreadPool()
 	{
-		const size_t numThreads = (size_t)std::thread::hardware_concurrency();
-		createThreads(numThreads);
+		//DEPRECATE TAG: Changed create threads to use compile time template param
+		//createThreads(numThreads);
+		//END TAG
+		createThreads();
 	}
+
+	//DEPRECATE TAG: Removing this default constructor in favor of compile time 
+		//ThreadPool()
+		//{
+		//	const size_t numThreads = (size_t)std::thread::hardware_concurrency();
+		//	createThreads(numThreads);
+		//}
 	/* end constructors */
+	//END TAG
 
 	//Destructor
 	~ThreadPool()
 	{
 		shutdown = true;
 		notifier.notify_all();
-		for (size_t i = 0; i < threads.size(); ++i)
+		for (std::size_t i = 0; i < PoolSize; ++i)
 		{
 			threads[i].join();
 		}
@@ -66,26 +76,25 @@ public:
 	}
 	
 	/* utility functions will go here*/
-	size_t getThreadCount() {
+	constexpr std::size_t getThreadCount() const {
 		return threads.size();
 	}
 
 private:
 
 	using Job = std::function<void()>;
-	std::vector<std::thread> threads;
+	std::array<std::thread, PoolSize> threads;
 	std::queue<Job> jobQueue;
 	std::condition_variable notifier;
 	std::mutex JobMutex;
 	std::atomic<bool> shutdown = false;
 
-	void createThreads(size_t numThreads)
+	void createThreads()
 	{
-
-		threads.reserve(numThreads);
+		constexpr std::size_t numThreads = PoolSize;
 		for (int i = 0; i != numThreads; ++i)
 		{
-			threads.emplace_back([this]()
+			threads[i] = std::thread([this]()
 			{
 				while (true)
 				{
