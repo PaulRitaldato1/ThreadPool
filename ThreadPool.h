@@ -118,7 +118,7 @@ private:
 						jobQueue.pop();
 					}
 					job();
-					}
+				}
 			});
 		}
 	}
