@@ -122,4 +122,6 @@ private:
 			});
 		}
 	}
+	ThreadPool (const ThreadPool&) = delete;
+	ThreadPool& operator= (const ThreadPool&) = delete;
 }; /* end ThreadPool Class */
