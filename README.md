@@ -1,7 +1,5 @@
 # ThreadPool
-I needed an easy to use thread pool for my game engine project, so here it goes.
-
-All you need to do is include the header file and done!
+Header only thread pool that is easy to use, returns futures to get return values, and accepts functions with arguments.
 ## Usage
 Simply instantiate a pool like any other class
 
