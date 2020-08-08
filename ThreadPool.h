@@ -87,7 +87,7 @@ private:
 	std::queue<Job> jobQueue;
 	std::condition_variable notifier;
 	std::mutex JobMutex;
-	std::atomic<bool> shutdown = false;
+	std::atomic<bool> killThreads = false;
 
 	void createThreads()
 	{
@@ -102,9 +102,9 @@ private:
 
 					{
 						std::unique_lock<std::mutex> lock(JobMutex);
-						notifier.wait(lock, [this] {return !jobQueue.empty() || shutdown; });
+						notifier.wait(lock, [this] {return !jobQueue.empty() || killThreads; });
 
-						if (shutdown)
+						if (killThreads)
 						{
 							break;
 						}
