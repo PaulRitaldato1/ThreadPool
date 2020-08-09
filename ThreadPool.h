@@ -41,7 +41,7 @@ public:
 	//Destructor
 	~ThreadPool()
 	{
-		shutdown = true;
+		killThreads = true;
 		notifier.notify_all();
 		for (std::size_t i = 0; i < PoolSize; ++i)
 		{
