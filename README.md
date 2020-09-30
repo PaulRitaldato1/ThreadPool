@@ -18,7 +18,7 @@ int main () {
    /* ================== Creating a Pool ================== */
    
   //the pool will allow you to make any number of threads up to std::size_t
-  ThreadPool<5> pool(); //creates an instance of the threadpool with 5 threads
+  ThreadPool pool(5); //creates an instance of the threadpool with 5 threads
   //or
   ThreadPool pool2; // Create a default pool with ONE thread
   
